@@ -1032,6 +1032,7 @@ body {
         box-shadow: var(--shadow-heavy);
         transform: translateY(-100%);
         opacity: 0;
+        gap: 2rem;
         visibility: hidden;
         transition: var(--transition);
     }
