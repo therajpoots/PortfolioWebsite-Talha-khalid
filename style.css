@@ -1257,7 +1257,24 @@ body {
   grid-template-columns: repeat(2, minmax(320px, 1fr));
   gap: 2rem;
 }
+.author-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin: 2rem 0;
+    padding: 1rem;
+    background: var(--light-bg);
+    border-radius: var(--radius);
+}
 
+.publication-citations {
+    margin-top: 0.5rem;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
 /* ---------- Cards ---------- */
 .publication-card {
   background: var(--white);

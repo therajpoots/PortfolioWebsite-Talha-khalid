@@ -9,191 +9,16 @@ class PortfolioManager {
         this.modalClose = document.getElementById('modalClose');
         this.modalBody = document.getElementById('modalBody');
 
-        // Project data with updated professional color scheme
-        this.projectData = {
-            'heart-rate-monitor': {
-                title: 'Beat Per Minute Calculator / Heart Rate Monitor',
-                date: 'Jul 2023 – Sep 2023',
-                description: 'A comprehensive biomedical project implementing a MATLAB-based Heart Rate Monitor system. This innovative solution performs real-time heartbeat detection, calculates accurate BPM measurements, conducts FFT spectrum analysis, identifies ECG peaks (R-wave and T-wave), and analyzes instantaneous power and energy for both medical diagnostics and fitness monitoring applications.',
-                features: [
-                    'Real-time Beats Per Minute (BPM) calculation with high precision',
-                    'Advanced ECG R-wave and T-wave detection using adaptive thresholding',
-                    'Heart rate variability tracking for cardiac health assessment',
-                    'Intelligent abnormal heart rate detection and alert system'
-                ],
-                technologies: ['MATLAB', 'Signal Processing', 'ECG Analysis', 'Biomedical Algorithms', 'FFT Analysis', 'Peak Detection'],
-                 images: [
-                    { src: 'output.png', caption: 'Result' }
-                ],
-                code: `%% Advanced Heart Rate Monitor - BPM, Spectrum, and ECG Peak Detection
-
-% === SIGNAL PREPROCESSING ===
-% Load and filter ECG signal
-fs = 100;                           % Sampling frequency (Hz)
-N = length(ECG);                    % Signal length
-duration_in_seconds = N / fs;
-duration_in_minutes = duration_in_seconds / 60;
-
-% Apply bandpass filter to remove noise
-[b, a] = butter(4, [0.5 40]/(fs/2), 'bandpass');
-ECG_filtered = filtfilt(b, a, ECG);
-
-% === ADVANCED PEAK DETECTION & BPM CALCULATION ===
-% Dynamic threshold calculation
-ECG_squared = ECG_filtered.^2;
-ECG_integrated = conv(ECG_squared, ones(1,30)/30, 'same');
-
-% Adaptive threshold using signal statistics
-threshold = 0.3 * max(ECG_integrated);
-beat_count = 0;
-peak_locations = [];
-
-for k = 2:length(ECG_integrated)-1
-    if (ECG_integrated(k) > ECG_integrated(k-1) && ...
-        ECG_integrated(k) > ECG_integrated(k+1) && ...
-        ECG_integrated(k) > threshold)
-        beat_count = beat_count + 1;
-        peak_locations = [peak_locations, k];
-    end
-end
-
-% Calculate average BPM
-BPM_avg = beat_count / duration_in_minutes;
-fprintf('Average Heart Rate: %.1f BPM\\n', BPM_avg);
-
-% === FFT SPECTRUM ANALYSIS ===
-NFFT = 2^nextpow2(N);              % Next power of 2 for efficiency
-Y = fft(ECG_filtered, NFFT) / N;   % Normalized FFT
-f = (fs/2 * linspace(0,1,NFFT/2+1))'; % Frequency vector
-amplitude_spectrum = 2*abs(Y(1:NFFT/2+1));
-
-% Plot spectrum
-figure('Name', 'ECG Frequency Spectrum');
-plot(f, amplitude_spectrum, 'LineWidth', 2);
-title('Single-Sided Amplitude Spectrum of ECG Signal');
-xlabel('Frequency (Hz)');
-ylabel('|Y(f)| Amplitude');
-grid on;
-xlim([0 50]); % Focus on relevant frequencies
-
-% === ADVANCED SPECTROGRAM ANALYSIS ===
-Nspec = 256;                       % Window length
-wspec = hamming(Nspec);            % Hamming window
-Noverlap = Nspec/2;                % 50% overlap
-[S, W, T] = spectrogram(ECG_filtered, wspec, Noverlap, NFFT, fs);
-
-figure('Name', 'ECG Spectrogram');
-spectrogram(ECG_filtered, wspec, Noverlap, NFFT, fs, 'yaxis');
-title('ECG Signal Spectrogram');
-colormap('jet');
-
-% === PRECISION R-WAVE & T-WAVE DETECTION ===
-% R-wave detection (positive peaks)
-[R_peaks, R_locs] = findpeaks(ECG_filtered, ...
-    'MinPeakHeight', 0.5, ...
-    'MinPeakDistance', 60, ...
-    'MinPeakProminence', 0.3);
-
-% T-wave detection (smaller positive peaks)
-[T_peaks, T_locs] = findpeaks(ECG_filtered, ...
-    'MinPeakHeight', 0.1, ...
-    'MaxPeakHeight', 0.4, ...
-    'MinPeakDistance', 30);
-
-% Visualization
-figure('Name', 'ECG Peak Detection');
-plot(ECG_filtered, 'b-', 'LineWidth', 1.5);
-hold on;
-plot(R_locs, R_peaks, 'rv', 'MarkerSize', 8, 'MarkerFaceColor', 'r');
-plot(T_locs, T_peaks, 'g^', 'MarkerSize', 6, 'MarkerFaceColor', 'g');
-legend('ECG Signal', 'R-waves', 'T-waves');
-xlabel('Sample Number');
-ylabel('Amplitude (mV)');
-title('ECG Signal with R-wave and T-wave Detection');
-grid on;
-
-% === POWER AND ENERGY ANALYSIS ===
-% Instantaneous power calculation
-instantaneous_power = ECG_filtered.^2;
-average_power = mean(instantaneous_power);
-total_energy = sum(instantaneous_power) / fs; % Energy per second
-
-% Power spectrum density
-[psd, f_psd] = pwelch(ECG_filtered, [], [], [], fs);
-
-figure('Name', 'Power Analysis');
-subplot(2,1,1);
-plot(instantaneous_power, 'g-', 'LineWidth', 1);
-hold on;
-plot(ones(size(ECG_filtered))*average_power, 'r--', 'LineWidth', 2);
-title('Instantaneous Power Analysis');
-ylabel('Power (mV²)');
-legend('Instantaneous Power', 'Average Power');
-grid on;
-
-subplot(2,1,2);
-semilogy(f_psd, psd, 'b-', 'LineWidth', 1.5);
-title('Power Spectral Density');
-xlabel('Frequency (Hz)');
-ylabel('PSD (mV²/Hz)');
-grid on;
-
-% === CLINICAL METRICS CALCULATION ===
-% Heart Rate Variability (HRV)
-if length(R_locs) > 1
-    RR_intervals = diff(R_locs) / fs * 1000; % in milliseconds
-    RMSSD = sqrt(mean(diff(RR_intervals).^2)); % Root mean square of successive differences
-    SDNN = std(RR_intervals); % Standard deviation of NN intervals
-    
-    fprintf('Heart Rate Variability Metrics:\\n');
-    fprintf('RMSSD: %.2f ms\\n', RMSSD);
-    fprintf('SDNN: %.2f ms\\n', SDNN);
-end
-
-% Display results
-fprintf('\\n=== ECG ANALYSIS RESULTS ===\\n');
-fprintf('Total Energy: %.4f mV²·s\\n', total_energy);
-fprintf('Average Power: %.4f mV²\\n', average_power);
-fprintf('Peak Count: %d beats\\n', length(R_locs));
-fprintf('Signal Duration: %.1f seconds\\n', duration_in_seconds);
-
-% Save results to workspace
-save('ecg_analysis_results.mat', 'BPM_avg', 'R_locs', 'T_locs', ...
-     'instantaneous_power', 'total_energy', 'RR_intervals');
-
-disp('ECG analysis complete. Results saved to workspace.');`
-            },
-
-            'therapeutic-device': {
-                title: 'Wearable Therapeutic Device for Chronic Venous Insufficiency',
-                date: 'Sep 2023 – Jul 2024',
-                description: 'Advanced wearable medical device engineered for Chronic Venous Insufficiency (CVI) treatment. This innovative therapeutic solution integrates intelligent graduated compression therapy with precision pressure sensors and real-time monitoring capabilities. The device optimizes patient comfort while delivering clinically effective therapeutic intervention for improved venous circulation, reduced edema, and enhanced quality of life.',
-                features: [
-                    'Patient comfort optimization through adaptive compression algorithms',
-                    'Therapeutic effectiveness tracking with clinical outcome metrics',
-                    'Lightweight, breathable materials with ergonomic design for daily wear'
-                ],
-                technologies: ['Medical Device Design', 'Pressure Sensors', 'Therapeutic Systems', 'Biomechanics', 'Patient Monitoring', 'Wearable Electronics', 'Clinical Validation'],
-                images: [
-                    { src: 'flowcircuit.png.jpg', caption: 'Flow Diagram' },
-                    { src: 'cvi.jpg', caption: ' Output' }
-                ]
-            },
-
-            'drug-delivery': {
-                title: 'Automated Precision Drug Delivery System',
-                date: 'Jul 2023 – Sep 2023',
-                description: 'Precision-engineered automated drug delivery system utilizing advanced Arduino microcontroller architecture and intelligent control algorithms. This comprehensive healthcare IoT solution minimizes human intervention while ensuring accurate, timely medication administration. The system enhances patient safety, improves treatment compliance, and reduces medication errors through sophisticated automation and monitoring capabilities.',
-                features: [
-                    'Reduce Human Intervention', 'Enhance Accuracy and Safety', 'Improve Patient Compliance & Convenience'
-                ],
-                technologies: ['Arduino', 'Healthcare IoT', 'Automation Systems', 'Precision Control', 'Safety Systems', 'Sensor Integration', 'Wireless Communication'],
-                images: [
-                    { src: 'arduino.jpg', caption: 'Circuit Design' },
-                    { src: 'drug1.png', caption: ' Output' }
-                ]
-            }
-        };
+        // Publications data for OpenAlex API
+        this.authorId = 'A5026184193'; // OpenAlex Author ID for Rana Talha Khalid
+        this.publicationsDOIs = [
+            { doi: '10.1016/j.nanoen.2025.111296', index: 0 },
+            { doi: '10.1016/j.cej.2025.159478', index: 1 },
+            { doi: '10.1016/j.jsamd.2025.101030', index: 2 },
+            { doi: '10.1016/j.cej.2025.170117', index: 3 },
+            { doi: '10.1016/j.jsamd.2025.100889', index: 4 },
+            { doi: '10.3390/materproc2025023005', index: 5 }
+        ];
 
         this.init();
     }
@@ -203,6 +28,74 @@ disp('ECG analysis complete. Results saved to workspace.');`
         this.setupIntersectionObserver();
         this.setupSmoothScrolling();
         this.initializeAnimations();
+        this.loadPublicationStats(); // Load citation stats on init
+    }
+
+    loadPublicationStats() {
+        // Fetch author metrics (total citations, h-index, i10-index)
+        fetch(`https://api.openalex.org/authors/${this.authorId}`)
+            .then(res => res.json())
+            .then(data => {
+                this.insertAuthorStats(data);
+            })
+            .catch(err => {
+                console.error('Error fetching author stats:', err);
+                // Fallback: Insert placeholder stats
+                this.insertAuthorStats({ cited_by_count: 0, h_index: 0, i10_index: 0 });
+            });
+
+        // Fetch citation counts for each publication
+        this.publicationsDOIs.forEach(pub => {
+            fetch(`https://api.openalex.org/works/DOI:${pub.doi}`)
+                .then(res => res.json())
+                .then(data => {
+                    const work = data.results[0];
+                    const citations = work ? (work.cited_by_count || 0) : 0;
+                    this.updatePublicationCitations(pub.index, citations);
+                })
+                .catch(err => {
+                    console.error(`Error fetching citations for ${pub.doi}:`, err);
+                    this.updatePublicationCitations(pub.index, 0); // Fallback to 0
+                });
+        });
+    }
+
+    insertAuthorStats(stats) {
+        const publicationsSection = document.getElementById('publications');
+        if (!publicationsSection || document.querySelector('.author-stats')) return; // Avoid duplicates
+
+        const statsDiv = document.createElement('div');
+        statsDiv.className = 'author-stats';
+        statsDiv.innerHTML = `
+            <div class="stat">
+                <div class="stat-number">${stats.cited_by_count || 0}</div>
+                <div class="stat-label">Total Citations</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">${stats.h_index || 0}</div>
+                <div class="stat-label">h-index</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">${stats.i10_index || 0}</div>
+                <div class="stat-label">i10-index</div>
+            </div>
+        `;
+
+        publicationsSection.parentNode.insertBefore(statsDiv, publicationsSection);
+    }
+
+    updatePublicationCitations(index, citations) {
+        const cards = document.querySelectorAll('.publication-card');
+        if (!cards[index]) return;
+
+        let citDiv = cards[index].querySelector('.publication-citations');
+        if (!citDiv) {
+            citDiv = document.createElement('div');
+            citDiv.className = 'publication-citations';
+            cards[index].appendChild(citDiv);
+        }
+
+        citDiv.innerHTML = `<i class="fas fa-citation"></i> <strong>Citations:</strong> ${citations}`;
     }
 
     setupEventListeners() {
