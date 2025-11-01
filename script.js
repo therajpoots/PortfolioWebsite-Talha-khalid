@@ -9,9 +9,9 @@ class PortfolioManager {
         this.modalClose = document.getElementById('modalClose');
         this.modalBody = document.getElementById('modalBody');
 
-        // Hardcoded stats from Google Scholar (update as needed)
-        this.authorStats = { cited_by_count: 34, h_index: 3, i10_index: 2 };
-        this.publicationCitations = [5, 15, 0, 0, 13, 1]; // Order: Nano Energy, Chem Eng J (Reshaping), JSAMD (Electrospun), Chem Eng J (Next-gen), JSAMD (Hybrid), Mater Proc
+        // Fallback hardcoded stats (in case API fails)
+        this.fallbackStats = { cited_by_count: 34, h_index: 3, i10_index: 2 };
+        this.fallbackCitations = [5, 15, 0, 0, 13, 1]; // Order: Nano Energy, Chem Eng J (Reshaping), JSAMD (Electrospun), Chem Eng J (Next-gen), JSAMD (Hybrid), Mater Proc
 
         // Sample projectData for modals (add 'data-project="id"' to project-cards and 'btn-read-more' buttons if needed)
         this.projectData = {
@@ -42,17 +42,25 @@ class PortfolioManager {
         this.setupIntersectionObserver();
         this.setupSmoothScrolling();
         this.initializeAnimations();
-        this.loadPublicationStats(); // Load hardcoded stats
+        this.loadPublicationStats(); // Now fetches live from Netlify Function
     }
 
-    loadPublicationStats() {
-        // Insert author stats
-        this.insertAuthorStats(this.authorStats);
-
-        // Update individual publication citations
-        this.publicationCitations.forEach((citations, index) => {
-            this.updatePublicationCitations(index, citations);
-        });
+    async loadPublicationStats() {
+        try {
+            const response = await fetch('/.netlify/functions/gs-citations');
+            if (!response.ok) throw new Error('Fetch failed');
+            const data = await response.json();
+            this.insertAuthorStats(data.stats);
+            data.paperCitations.forEach((citations, index) => {
+                this.updatePublicationCitations(index, citations);
+            });
+        } catch (err) {
+            console.warn('Live fetch failed, using fallback:', err);
+            this.insertAuthorStats(this.fallbackStats);
+            this.fallbackCitations.forEach((citations, index) => {
+                this.updatePublicationCitations(index, citations);
+            });
+        }
     }
 
     insertAuthorStats(stats) {
@@ -137,7 +145,7 @@ class PortfolioManager {
             });
         }
 
-        // Project modal handlers (add class="btn-read-more" to buttons and data-project to cards if using)
+        // Project modal handlers
         document.querySelectorAll('.btn-read-more').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -414,7 +422,7 @@ class PortfolioManager {
         // Show loading state
         this.showLoadingState(form);
 
-        // Simulate form submission (replace with actual API call, e.g., Netlify Forms)
+        // Simulate form submission (replace with actual API call)
         setTimeout(() => {
             this.hideLoadingState(form);
             this.showNotification('Thank you for your message! I will get back to you soon.', 'success');
