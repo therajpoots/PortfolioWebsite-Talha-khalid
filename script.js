@@ -9,16 +9,30 @@ class PortfolioManager {
         this.modalClose = document.getElementById('modalClose');
         this.modalBody = document.getElementById('modalBody');
 
-        // Publications data for OpenAlex API
-        this.authorId = 'A5026184193'; // OpenAlex Author ID for Rana Talha Khalid
-        this.publicationsDOIs = [
-            { doi: '10.1016/j.nanoen.2025.111296', index: 0 },
-            { doi: '10.1016/j.cej.2025.159478', index: 1 },
-            { doi: '10.1016/j.jsamd.2025.101030', index: 2 },
-            { doi: '10.1016/j.cej.2025.170117', index: 3 },
-            { doi: '10.1016/j.jsamd.2025.100889', index: 4 },
-            { doi: '10.3390/materproc2025023005', index: 5 }
-        ];
+        // Hardcoded stats from Google Scholar (update as needed)
+        this.authorStats = { cited_by_count: 34, h_index: 3, i10_index: 2 };
+        this.publicationCitations = [5, 15, 0, 0, 13, 1]; // Order: Nano Energy, Chem Eng J (Reshaping), JSAMD (Electrospun), Chem Eng J (Next-gen), JSAMD (Hybrid), Mater Proc
+
+        // Sample projectData for modals (add 'data-project="id"' to project-cards and 'btn-read-more' buttons if needed)
+        this.projectData = {
+            'upec': {
+                title: 'UPEC: A Multi-Modal AI-Powered Device',
+                date: '2024-2025',
+                description: 'Compact handheld device for cardiac diagnostics using Hybrid LSTM-CNN.',
+                features: ['AUC >97%', 'Real-time alerts', 'Portable design'],
+                technologies: ['TensorFlow', 'LSTM-CNN', 'Arduino'],
+                image: 'ucpe.jpg'
+            },
+            'eeg': {
+                title: 'EEG-Driven Motor Imagery Classification',
+                date: '2025',
+                description: 'CNN-Transformer system for stroke rehabilitation.',
+                features: ['88% accuracy', 'Real-time biofeedback', 'Gamified platform'],
+                technologies: ['PyTorch', 'CNN-Transformer', 'EEG Processing'],
+                image: 'eeg.jpg'
+            }
+            // Add more projects as needed
+        };
 
         this.init();
     }
@@ -28,55 +42,36 @@ class PortfolioManager {
         this.setupIntersectionObserver();
         this.setupSmoothScrolling();
         this.initializeAnimations();
-        this.loadPublicationStats(); // Load citation stats on init
+        this.loadPublicationStats(); // Load hardcoded stats
     }
 
     loadPublicationStats() {
-        // Fetch author metrics (total citations, h-index, i10-index)
-        fetch(`https://api.openalex.org/authors/${this.authorId}`)
-            .then(res => res.json())
-            .then(data => {
-                this.insertAuthorStats(data);
-            })
-            .catch(err => {
-                console.error('Error fetching author stats:', err);
-                // Fallback: Insert placeholder stats
-                this.insertAuthorStats({ cited_by_count: 0, h_index: 0, i10_index: 0 });
-            });
+        // Insert author stats
+        this.insertAuthorStats(this.authorStats);
 
-        // Fetch citation counts for each publication
-        this.publicationsDOIs.forEach(pub => {
-            fetch(`https://api.openalex.org/works/DOI:${pub.doi}`)
-                .then(res => res.json())
-                .then(data => {
-                    const work = data.results[0];
-                    const citations = work ? (work.cited_by_count || 0) : 0;
-                    this.updatePublicationCitations(pub.index, citations);
-                })
-                .catch(err => {
-                    console.error(`Error fetching citations for ${pub.doi}:`, err);
-                    this.updatePublicationCitations(pub.index, 0); // Fallback to 0
-                });
+        // Update individual publication citations
+        this.publicationCitations.forEach((citations, index) => {
+            this.updatePublicationCitations(index, citations);
         });
     }
 
     insertAuthorStats(stats) {
         const publicationsSection = document.getElementById('publications');
-        if (!publicationsSection || document.querySelector('.author-stats')) return; // Avoid duplicates
+        if (!publicationsSection || document.querySelector('.author-stats')) return;
 
         const statsDiv = document.createElement('div');
         statsDiv.className = 'author-stats';
         statsDiv.innerHTML = `
             <div class="stat">
-                <div class="stat-number">${stats.cited_by_count || 0}</div>
+                <div class="stat-number">${stats.cited_by_count}</div>
                 <div class="stat-label">Total Citations</div>
             </div>
             <div class="stat">
-                <div class="stat-number">${stats.h_index || 0}</div>
+                <div class="stat-number">${stats.h_index}</div>
                 <div class="stat-label">h-index</div>
             </div>
             <div class="stat">
-                <div class="stat-number">${stats.i10_index || 0}</div>
+                <div class="stat-number">${stats.i10_index}</div>
                 <div class="stat-label">i10-index</div>
             </div>
         `;
@@ -142,7 +137,7 @@ class PortfolioManager {
             });
         }
 
-        // Project modal handlers
+        // Project modal handlers (add class="btn-read-more" to buttons and data-project to cards if using)
         document.querySelectorAll('.btn-read-more').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -419,7 +414,7 @@ class PortfolioManager {
         // Show loading state
         this.showLoadingState(form);
 
-        // Simulate form submission (replace with actual API call)
+        // Simulate form submission (replace with actual API call, e.g., Netlify Forms)
         setTimeout(() => {
             this.hideLoadingState(form);
             this.showNotification('Thank you for your message! I will get back to you soon.', 'success');
